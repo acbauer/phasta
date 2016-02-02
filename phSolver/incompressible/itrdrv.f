@@ -139,12 +139,11 @@ c
       TYPE(svLS_lsType) svLS_ls_S(4)
 #endif
 
-! Coviz
-!  Flag for VTK CoProcessing
+!  Variables for ParaView Catalyst
         integer stringlength, docoprocessing
         character*200 pyfilename
         real*8 total_coproc_time, time
-! Coviz END
+! ParaView Catalyst END
 
         impistat = 0
         impistat2 = 0
@@ -167,14 +166,6 @@ c
         rCommu = zero
         rCommuScal = zero
 
-#ifdef USE_CATALYST
-! Coviz
-! set docoprocessing flag so vort computation can be set to true for each time step
-        docoprocessing = 1
-! Coviz END
-#else
-        docoprocessing = 0
-#endif
 
         call initmemstat() 
 
@@ -592,8 +583,7 @@ c
       nsteprcr = nstep(1)+lstep
 
 #ifdef USE_CATALYST
-! Coviz
-! Initialize the VTK CoProcessing
+! Initialize ParaView Catalyst
       pyfilename = "../cpscript.py"
       stringlength = 14
       docoprocessing = 1
@@ -993,7 +983,7 @@ c
 #ifdef USE_CATALYST
 ! Coviz
 !
-! Do VTK CoProcessing for this time step
+! Do ParaView Catalyst for this time step
 !
             if(docoprocessing .ne. 0) then
               if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
@@ -1537,7 +1527,7 @@ c
 #ifdef USE_CATALYST
 ! Coviz
 !
-! Finalize VTK CoProcessing
+! Finalize ParaView Catalyst
 !
          if(docoprocessing .ne. 0 ) then
            if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)

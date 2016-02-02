@@ -84,6 +84,15 @@ IF(PHASTA_USE_MPI)
   ENDIF(Threads_FOUND)
 ENDIF(PHASTA_USE_MPI)
 
+set(USE_CATALYST OFF CACHE BOOL "Link phasta with Catalyst")
+if(USE_CATALYST)
+        SET(CMAKE_FIND_LIBRARY_SUFFIXES .a ${CMAKE_FIND_LIBRARY_SUFFIXES})
+	find_package(ParaView REQUIRED COMPONENTS vtkPVPythonCatalyst)
+	include("${PARAVIEW_USE_FILE}")
+        add_definitions("-DUSE_CATALYST")
+endif()
+
+
 OPTION(PHASTA_BUILD_PHASTAIO "Build PhastaIO" ON)
 if(PHASTA_BUILD_PHASTAIO)
 	add_subdirectory(phastaIO)
