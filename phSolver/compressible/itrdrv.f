@@ -141,7 +141,6 @@ c....        does not count for initialize time to compare with tcorecpu time
 ! Coviz END
 #endif
 
-
        !HACK for debugging suction
 !       call Write_Debug(myrank, 'wallNormal'//char(0), 
 !     &                          'wnorm'//char(0), wnorm, 
@@ -840,6 +839,27 @@ c     &                         lstep,istep)
 ! Coviz END
 #endif
 
+#ifdef USE_SENSEI
+! SENSEI
+!
+            if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+            if(myrank.eq.0)  then
+               tcorecp3 = TMRC()
+            endif
+
+            call senseicoprocessor(istep, X, Y, 0, icomputevort,
+     &           vorticity, d2wall)
+
+            if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+            if(myrank.eq.0)  then
+               tcorecp4 = TMRC()
+               write(6,*) 'SENSEI coprocessor(): ',tcorecp4-tcorecp3
+               total_coproc_time = total_coproc_time + 
+     &              tcorecp4-tcorecp3
+            endif
+! SENSEI END
+#endif
+
 
 
  2000    continue  !end of NSTEP loop
@@ -1014,6 +1034,64 @@ c  Inside addfields we check to see if we really need the field or not
           tcorecp6 = TMRC()
           write(6,*) 'coprocess: ',tcorecp6-tcorecp5 
       endif
+      return
+      end
+#endif
+
+
+#ifdef USE_SENSEI
+c...==============================================================
+c... subroutine to do the coprocessing
+c... The subroutine is responsible for determining if coprocessing
+c... is needed this timestep and if it is needed then the
+c... subroutine passes the phasta data structures into
+c... the coprocessor. This is meant to be called at the end of
+c... every time step.
+c... The input is:
+c...    itimestep -- the current simulation time step
+c...    X -- the coordinates array of the nodes
+c...    Y -- the fields array (e.g. velocity, pressure, etc.)
+c...    compressibleflow -- flag to indicate whether or not the
+c...                         flow is compressible.  if it is then
+c...                         temperature will be outputted
+c...    computevort -- flag to indicate whether or not vorticity is computed
+c...    VORTICITY -- the vorticity array
+c... It has no output and should not change any Phasta data.
+c...==============================================================
+
+      subroutine senseicoprocessor(itimestep, X, Y, compressibleflow,
+     &                      computevort, VORTICITY, dwal )
+      use pointer_data
+      include "common.h"
+      integer iblk, nenl, npro, j, needflag, i
+      integer compressibleflow, itimestep, computevort
+      dimension x(numnp,nsd), y(nshg,ndof), vorticity(nshg, 5)
+      dimension dwal(nshg)
+!      dimension ycontainer(nshg,ndof)
+
+      if(nshg .ne. numnp) then
+         print *, 'SENSEI only setup for when nshg equals numnp'
+         return
+      endif
+
+      call senseiinitializegrid(numnp, X, numel)
+      do iblk=1,nelblk
+         nenl = lcblk(5,iblk)   ! no. of vertices per element
+         npro = lcblk(1,iblk+1) - lcblk(1,iblk) ! no. of elemens in block
+         call senseiaddcbi(npro, nenl, mien(iblk)%p(1,1))
+      enddo
+      call senseiaddfieldinformation(nshg, ndof, Y, compressibleflow,
+     &     vorticity,dwal)
+
+      if(myrank.eq.0)  then
+         tcorecp5 = TMRC()
+      endif
+      call senseiupdate(itimestep, time)
+      if(myrank.eq.0)  then
+          tcorecp6 = TMRC()
+          write(6,*) 'coprocess: ',tcorecp6-tcorecp5
+      endif
+      call senseireleasedata()
       return
       end
 #endif
