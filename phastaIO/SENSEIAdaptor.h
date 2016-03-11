@@ -43,7 +43,7 @@ public:
   /// vtkDataObject::FieldAssociations or vtkDataObject::AttributeTypes.
   /// @return true if array was added (or already added), false is request array
   /// is not available.
-  virtual bool AddArray(vtkDataObject* mesh, int association, const char* arrayname);
+  virtual bool AddArray(vtkDataObject* mesh, int association, const std::string& arrayname);
 
   /// @brief Return the number of field arrays available.
   ///
@@ -64,7 +64,7 @@ public:
   /// @param index index for the array. Must be less than value returned
   /// GetNumberOfArrays().
   /// @return name of the array.
-  virtual const char* GetArrayName(int association, unsigned int index);
+  virtual std::string GetArrayName(int association, unsigned int index);
 
   void InitializeGrid(int numPoints, double* coordsArray, int numCells);
   // just pass in the information needed to generate a block of cells

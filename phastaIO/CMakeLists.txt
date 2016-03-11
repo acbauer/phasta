@@ -12,12 +12,12 @@ add_definitions(-DMPICH_SKIP_MPICXX)
 add_definitions(-DOMPI_SKIP_MPICXX=1)
 set(SRC_FILES phiotmrc.cc phastaIO.cc)
 
+set(LINK_LIBRARIES ${MPI_C_LIBRARIES})
+
 if(USE_CATALYST)
   list(APPEND SRC_FILES CatalystAdaptor.cc)
 
-  # set the Catalyst dependencies. it will be ok if it's
-  # empty in target_link_libraries
-  set(CATALYST_DEPENDENCIES vtkPVPythonCatalyst)
+  list(APPEND LINK_LIBRARIES vtkPVPythonCatalyst)
 
   # below is to have CMake mangle the C/C++ functions
   # to be callable from Fortran.
@@ -35,11 +35,13 @@ if(USE_SENSEI)
   # to be callable from Fortran.
   include(FortranCInterface)
   FortranCInterface_HEADER(SENSEIBridgeAPIMangling.h SYMBOLS
-    senseiiinitialize senseiinitializegrid senseiaddcbi
+    senseiinitialize senseiinitializegrid senseiaddcbi
     senseiaddfieldinformation senseiupdate senseireleasedata senseifinalize)
   include_directories(${phastaIO_BINARY_DIR})
+
+  list(APPEND LINK_LIBRARIES ${SENSEI_LIBS} vtkCommonDataModel ${MPI_CXX_LIBRARIES})
 endif()
 
 ADD_LIBRARY(phastaIO ${SRC_FILES})
-message("the libs are ${MPI_C_LIBRARIES} CC ${CATALYST_DEPENDENCIES} SS ${SENSEI_LIBS}")
-target_link_libraries(phastaIO ${MPI_C_LIBRARIES} ${CATALYST_DEPENDENCIES} ${SENSEI_LIBS} vtkCommonDataModel)
+#target_link_libraries(phastaIO ${MPI_C_LIBRARIES} ${CATALYST_DEPENDENCIES} ${SENSEI_LIBS} vtkCommonDataModel ${MPI_CXX_LIBRARIES})
+target_link_libraries(phastaIO ${LINK_LIBRARIES})

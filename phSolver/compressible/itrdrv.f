@@ -141,6 +141,11 @@ c....        does not count for initialize time to compare with tcorecpu time
 ! Coviz END
 #endif
 
+#ifdef USE_SENSEI
+       write(*,*) 'ACB in sensei initialize'
+       call senseiinitialize()
+#endif
+
        !HACK for debugging suction
 !       call Write_Debug(myrank, 'wallNormal'//char(0), 
 !     &                          'wnorm'//char(0), wnorm, 
@@ -847,6 +852,8 @@ c     &                         lstep,istep)
                tcorecp3 = TMRC()
             endif
 
+            write(*,*) 'ACB about to senseicoprocess'
+
             call senseicoprocessor(istep, X, Y, 0, icomputevort,
      &           vorticity, d2wall)
 
@@ -916,6 +923,11 @@ c     endif
 
 c
 c.... close history and aerodynamic forces files
+
+#ifdef USE_SENSEI
+      call senseifinalize()
+#endif
+
 c     
       if (myrank .eq. master) then
          close (ihist)

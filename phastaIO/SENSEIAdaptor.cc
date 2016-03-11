@@ -22,6 +22,7 @@
 #include "vtkObjectFactory.h"
 #include "vtkPointData.h"
 #include "vtkPoints.h"
+#include "vtkSOADataArrayTemplate.h" // for VTK v. 7.1+
 #include "vtkUnstructuredGrid.h"
 
 namespace
@@ -113,9 +114,12 @@ SENSEIAdaptor::~SENSEIAdaptor()
 void SENSEIAdaptor::InitializeGrid(
   int numPoints, double* coordsArray, int numCells)
 {
+  cerr << this << " ACB numpoints " << numPoints << " CA " << coordsArray << " NC " << numCells << endl;
+
   this->NumPoints = numPoints;
   this->CoordsArray = coordsArray;
   this->NumCells = numCells;
+  cerr << "DONE ACB numpoints " << numPoints << " CA " << coordsArray << " NC " << numCells << endl;
 }
 
 //-----------------------------------------------------------------------------
@@ -157,15 +161,22 @@ vtkDataObject* SENSEIAdaptor::GetMesh(bool vtkNotUsed(structure_only))
     {
     this->Mesh = vtkSmartPointer<vtkUnstructuredGrid>::New();
     vtkPoints* nodePoints = vtkPoints::New();
-    vtkDoubleArray* coords = vtkDoubleArray::New();
+    // pre VTK v. 7.1
+    // vtkDoubleArray* coords = vtkDoubleArray::New();
+    // coords->SetNumberOfComponents(3);
+    // coords->SetNumberOfTuples(this->NumPoints);
+    // for(int i=0;i<this->NumPoints;i++)
+    //   {
+    //   double tuple[3] = {this->CoordsArray[i], this->CoordsArray[i+this->NumPoints],
+    //                      this->CoordsArray[i+this->NumPoints*2]};
+    //   coords->SetTupleValue(i, tuple);
+    //   }
+    vtkSOADataArrayTemplate<double>* coords = vtkSOADataArrayTemplate<double>::New();
     coords->SetNumberOfComponents(3);
     coords->SetNumberOfTuples(this->NumPoints);
-    for(int i=0;i<this->NumPoints;i++)
-      {
-      double tuple[3] = {this->CoordsArray[i], this->CoordsArray[i+this->NumPoints],
-                         this->CoordsArray[i+this->NumPoints*2]};
-      coords->SetTupleValue(i, tuple);
-      }
+    coords->SetArray(0, this->CoordsArray, this->NumPoints, false, true);
+    coords->SetArray(1, this->CoordsArray+this->NumPoints, this->NumPoints, false, true);
+    coords->SetArray(2, this->CoordsArray+this->NumPoints*2, this->NumPoints, false, true);
     nodePoints->SetData(coords);
     coords->Delete();
     this->Mesh->SetPoints(nodePoints);
@@ -181,32 +192,46 @@ vtkDataObject* SENSEIAdaptor::GetMesh(bool vtkNotUsed(structure_only))
 }
 
 //-----------------------------------------------------------------------------
-bool SENSEIAdaptor::AddArray(vtkDataObject* mesh, int association, const char* arrayname)
+  bool SENSEIAdaptor::AddArray(vtkDataObject* mesh, int association,
+                               const std::string& arrayname)
 {
-  if (association != vtkDataObject::FIELD_ASSOCIATION_CELLS)
+  if (association == vtkDataObject::FIELD_ASSOCIATION_CELLS)
     {
     return false;
     }
 
   vtkDataSet* dataSet = vtkDataSet::SafeDownCast(mesh);
 
-  if(strcmp(arrayname, "velocity") == 0)
+  if(arrayname == "velocity")
     {
-    vtkDoubleArray* velocity = vtkDoubleArray::New();
+    // pre VTK v. 7.1
+    // vtkDoubleArray* velocity = vtkDoubleArray::New();
+    // velocity->SetName("velocity");
+    // velocity->SetNumberOfComponents(3);
+    // velocity->SetNumberOfTuples(dataSet->GetNumberOfPoints());
+    // for (vtkIdType idx=0; idx<dataSet->GetNumberOfPoints(); idx++)
+    //   {
+    //   velocity->SetTuple3(idx, this->DofArray[idx],
+    //                       this->DofArray[idx+this->NSHG],
+    //                       this->DofArray[idx+this->NSHG*2]);
+    //   }
+    // dataSet->GetPointData()->AddArray(velocity);
+    // velocity->Delete();
+    // return true;
+
+    vtkSOADataArrayTemplate<double>* velocity = vtkSOADataArrayTemplate<double>::New();
     velocity->SetName("velocity");
     velocity->SetNumberOfComponents(3);
     velocity->SetNumberOfTuples(dataSet->GetNumberOfPoints());
-    for (vtkIdType idx=0; idx<dataSet->GetNumberOfPoints(); idx++)
-      {
-      velocity->SetTuple3(idx, this->DofArray[idx],
-                          this->DofArray[idx+this->NSHG],
-                          this->DofArray[idx+this->NSHG*2]);
-      }
+    velocity->SetArray(0, this->DofArray, dataSet->GetNumberOfPoints(), false, true);
+    velocity->SetArray(1, this->DofArray+this->NSHG, dataSet->GetNumberOfPoints(), false, true);
+    velocity->SetArray(2, this->DofArray+this->NSHG*2, dataSet->GetNumberOfPoints(), false, true);
     dataSet->GetPointData()->AddArray(velocity);
     velocity->Delete();
     return true;
+
     }
-  if(strcmp(arrayname, "pressure") == 0)
+  if(arrayname == "pressure")
     {
     vtkDoubleArray* pressure = vtkDoubleArray::New();
     pressure->SetName("pressure");
@@ -217,7 +242,7 @@ bool SENSEIAdaptor::AddArray(vtkDataObject* mesh, int association, const char* a
     }
 
   // temperature only varies from compressible flow
-  if(strcmp(arrayname, "temperature") == 0 && this->CompressibleFlow == 1)
+  if(arrayname == "temperature" && this->CompressibleFlow == 1)
     {
     vtkDoubleArray* temperature = vtkDoubleArray::New();
     temperature->SetName("temperature");
@@ -244,7 +269,7 @@ unsigned int SENSEIAdaptor::GetNumberOfArrays(int association)
   return 2;
 }
 
-const char* SENSEIAdaptor::GetArrayName(int association, unsigned int index)
+std::string SENSEIAdaptor::GetArrayName(int association, unsigned int index)
 {
   if (association != vtkDataObject::FIELD_ASSOCIATION_CELLS)
     {
