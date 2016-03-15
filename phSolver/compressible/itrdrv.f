@@ -1090,10 +1090,9 @@ c...==============================================================
       do iblk=1,nelblk
          nenl = lcblk(5,iblk)   ! no. of vertices per element
          npro = lcblk(1,iblk+1) - lcblk(1,iblk) ! no. of elemens in block
-         call senseiaddcbi(npro, nenl, mien(iblk)%p(1,1))
+         call senseiaddcellblockinformation(npro,nenl,mien(iblk)%p(1,1))
       enddo
-      call senseiaddfieldinformation(nshg, ndof, Y, compressibleflow,
-     &     vorticity,dwal)
+      call senseiaddfieldinformation(nshg, Y, compressibleflow)
 
       if(myrank.eq.0)  then
          tcorecp5 = TMRC()

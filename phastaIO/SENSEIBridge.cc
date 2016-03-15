@@ -3,11 +3,13 @@
 #include "SENSEIBridge.h"
 #include "SENSEIAdaptor.h"
 #include <Autocorrelation.h>
+#include <GeneralAutocorrelation.h>
 
 namespace BridgeInternals
 {
   static vtkSmartPointer<sensei::SENSEIAdaptor> GlobalDataAdaptor;
-  static vtkSmartPointer<sensei::Autocorrelation> GlobalAnalysisAdaptor;
+  static vtkSmartPointer<sensei::GeneralAutocorrelation> GAAdaptor;
+  static vtkSmartPointer<sensei::Autocorrelation> AAdaptor; // not currently working
 }
 
 void senseiinitialize()
@@ -16,12 +18,18 @@ void senseiinitialize()
     {
     BridgeInternals::GlobalDataAdaptor = vtkSmartPointer<sensei::SENSEIAdaptor>::New();
     }
-  if (!BridgeInternals::GlobalAnalysisAdaptor)
+  if (!BridgeInternals::GAAdaptor)
     {
-    BridgeInternals::GlobalAnalysisAdaptor = vtkSmartPointer<sensei::Autocorrelation>::New();
+    BridgeInternals::GAAdaptor = vtkSmartPointer<sensei::GeneralAutocorrelation>::New();
     std::string arrayname = "pressure";
-    BridgeInternals::GlobalAnalysisAdaptor->Initialize(MPI_COMM_WORLD, 2, vtkDataObject::FIELD_ASSOCIATION_POINTS, arrayname, 4);
+    BridgeInternals::GAAdaptor->Initialize(2, vtkDataObject::FIELD_ASSOCIATION_POINTS, arrayname);
     }
+  // if (!BridgeInternals::AAdaptor)
+  //   {
+  //   BridgeInternals::AAdaptor = vtkSmartPointer<sensei::Autocorrelation>::New();
+  //   std::string arrayname = "pressure";
+  //   BridgeInternals::AAdaptor->Initialize(MPI_COMM_WORLD, 2, vtkDataObject::FIELD_ASSOCIATION_POINTS, arrayname, 5);
+  //   }
 }
 
 void senseiinitializegrid(int* numPoints, double* coordsArray, int* numCells)
@@ -29,7 +37,7 @@ void senseiinitializegrid(int* numPoints, double* coordsArray, int* numCells)
   BridgeInternals::GlobalDataAdaptor->InitializeGrid(*numPoints, coordsArray, *numCells);
 }
 
-void senseiaddcbi(
+void senseiaddcellblockinformation(
   int* numCellsInBlock, int* numPointsPerCell, int* cellConnectivity)
 {
   BridgeInternals::GlobalDataAdaptor->AddCellBlockInformation(
@@ -46,9 +54,8 @@ void senseiupdate(int* tstep, double* time)
 {
   BridgeInternals::GlobalDataAdaptor->SetDataTime(*time);
   BridgeInternals::GlobalDataAdaptor->SetDataTimeStep(*tstep);
-  vtkDataObject* mesh = BridgeInternals::GlobalDataAdaptor->GetMesh();
-  BridgeInternals::GlobalDataAdaptor->AddArray(mesh, vtkDataObject::FIELD_ASSOCIATION_POINTS, "pressure");
-  BridgeInternals::GlobalAnalysisAdaptor->Execute(BridgeInternals::GlobalDataAdaptor);
+  BridgeInternals::GAAdaptor->Execute(BridgeInternals::GlobalDataAdaptor);
+  //BridgeInternals::AAdaptor->Execute(BridgeInternals::GlobalDataAdaptor);
 }
 
 void senseireleasedata()
@@ -60,9 +67,7 @@ void senseifinalize()
 {
   cerr << "SENSEI: finalizing\n";
   BridgeInternals::GlobalDataAdaptor->ReleaseData();
-  cerr << BridgeInternals::GlobalAnalysisAdaptor  << " SENSEI: finalizing   11111\n";
-  BridgeInternals::GlobalAnalysisAdaptor = NULL;
-  cerr << "SENSEI: finalizing  22222\n";
+  BridgeInternals::GAAdaptor = NULL;
+  BridgeInternals::AAdaptor = NULL;
   BridgeInternals::GlobalDataAdaptor = NULL;
-  cerr << "SENSEI: done finalizing\n";
 }

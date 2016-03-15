@@ -35,7 +35,7 @@ if(USE_SENSEI)
   # to be callable from Fortran.
   include(FortranCInterface)
   FortranCInterface_HEADER(SENSEIBridgeAPIMangling.h SYMBOLS
-    senseiinitialize senseiinitializegrid senseiaddcbi
+    senseiinitialize senseiinitializegrid senseiaddcellblockinformation
     senseiaddfieldinformation senseiupdate senseireleasedata senseifinalize)
   include_directories(${phastaIO_BINARY_DIR})
 

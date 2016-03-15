@@ -235,6 +235,7 @@ vtkDataObject* SENSEIAdaptor::GetMesh(bool vtkNotUsed(structure_only))
     {
     vtkDoubleArray* pressure = vtkDoubleArray::New();
     pressure->SetName("pressure");
+    cerr << "settingggg " << this->DofArray << " nshg " << this->NSHG << endl;
     pressure->SetArray(this->DofArray+this->NSHG*3, dataSet->GetNumberOfPoints(), 1);
     dataSet->GetPointData()->AddArray(pressure);
     pressure->Delete();
