@@ -114,12 +114,9 @@ SENSEIAdaptor::~SENSEIAdaptor()
 void SENSEIAdaptor::InitializeGrid(
   int numPoints, double* coordsArray, int numCells)
 {
-  cerr << this << " ACB numpoints " << numPoints << " CA " << coordsArray << " NC " << numCells << endl;
-
   this->NumPoints = numPoints;
   this->CoordsArray = coordsArray;
   this->NumCells = numCells;
-  cerr << "DONE ACB numpoints " << numPoints << " CA " << coordsArray << " NC " << numCells << endl;
 }
 
 //-----------------------------------------------------------------------------
@@ -235,7 +232,6 @@ vtkDataObject* SENSEIAdaptor::GetMesh(bool vtkNotUsed(structure_only))
     {
     vtkDoubleArray* pressure = vtkDoubleArray::New();
     pressure->SetName("pressure");
-    cerr << "settingggg " << this->DofArray << " nshg " << this->NSHG << endl;
     pressure->SetArray(this->DofArray+this->NSHG*3, dataSet->GetNumberOfPoints(), 1);
     dataSet->GetPointData()->AddArray(pressure);
     pressure->Delete();

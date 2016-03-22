@@ -5,15 +5,22 @@
 #include <Autocorrelation.h>
 #include <GeneralAutocorrelation.h>
 
+#include <timer/Timer.h>
+
 namespace BridgeInternals
 {
   static vtkSmartPointer<sensei::SENSEIAdaptor> GlobalDataAdaptor;
   static vtkSmartPointer<sensei::GeneralAutocorrelation> GAAdaptor;
   static vtkSmartPointer<sensei::Autocorrelation> AAdaptor; // not currently working
+
+  // for timing
+  timer::MarkEvent* Timer = NULL;
+  int Counter = 0;
 }
 
 void senseiinitialize()
 {
+  timer::MarkEvent mark("senseiinitialize");
   if (!BridgeInternals::GlobalDataAdaptor)
     {
     BridgeInternals::GlobalDataAdaptor = vtkSmartPointer<sensei::SENSEIAdaptor>::New();
@@ -22,7 +29,7 @@ void senseiinitialize()
     {
     BridgeInternals::GAAdaptor = vtkSmartPointer<sensei::GeneralAutocorrelation>::New();
     std::string arrayname = "pressure";
-    BridgeInternals::GAAdaptor->Initialize(2, vtkDataObject::FIELD_ASSOCIATION_POINTS, arrayname);
+    BridgeInternals::GAAdaptor->Initialize(4, vtkDataObject::FIELD_ASSOCIATION_POINTS, arrayname);
     }
   // if (!BridgeInternals::AAdaptor)
   //   {
@@ -34,6 +41,16 @@ void senseiinitialize()
 
 void senseiinitializegrid(int* numPoints, double* coordsArray, int* numCells)
 {
+  if(!BridgeInternals::Timer)
+    {
+    timer::MarkStartTimeStep(BridgeInternals::Counter, BridgeInternals::Counter);
+    BridgeInternals::Counter++;
+    BridgeInternals::Timer = new timer::MarkEvent("SENSEICompute");
+    }
+  else
+    {
+    cerr << "Something wrong with the timer\n";
+    }
   BridgeInternals::GlobalDataAdaptor->InitializeGrid(*numPoints, coordsArray, *numCells);
 }
 
@@ -61,11 +78,21 @@ void senseiupdate(int* tstep, double* time)
 void senseireleasedata()
 {
   BridgeInternals::GlobalDataAdaptor->ReleaseData();
+  if(BridgeInternals::Timer)
+    {
+    delete BridgeInternals::Timer;
+    BridgeInternals::Timer = NULL;
+    timer::MarkEndTimeStep();
+    }
+  else
+    {
+    cerr << "Something wrong with the timer (finalize)\n";
+    }
 }
 
 void senseifinalize()
 {
-  cerr << "SENSEI: finalizing\n";
+  timer::MarkEvent mark("senseifinalize");
   BridgeInternals::GlobalDataAdaptor->ReleaseData();
   BridgeInternals::GAAdaptor = NULL;
   BridgeInternals::AAdaptor = NULL;

@@ -110,8 +110,6 @@ c
 !-------
 
 #ifdef USE_CATALYST
-       write(*,*) 'ACB in fortran'
-
 ! Initialize ParaView Catalyst
 !      pyfilename = "../cpscript.py"
       pyfilename = "/data/acbauer/Code/PHASTA/build/cpscript.py"
@@ -142,7 +140,6 @@ c....        does not count for initialize time to compare with tcorecpu time
 #endif
 
 #ifdef USE_SENSEI
-       write(*,*) 'ACB in sensei initialize'
        call senseiinitialize()
 #endif
 
@@ -847,22 +844,22 @@ c     &                         lstep,istep)
 #ifdef USE_SENSEI
 ! SENSEI
 !
-            if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-            if(myrank.eq.0)  then
-               tcorecp3 = TMRC()
-            endif
+            if (mod(istep, 2) .eq. 0 ) then
+               if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+               if (myrank.eq.0)  then
+                  tcorecp3 = TMRC()
+               endif
 
-            write(*,*) 'ACB about to senseicoprocess'
+               call senseicoprocessor(istep, X, Y, 0, icomputevort,
+     &              vorticity, d2wall)
 
-            call senseicoprocessor(istep, X, Y, 0, icomputevort,
-     &           vorticity, d2wall)
-
-            if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
-            if(myrank.eq.0)  then
-               tcorecp4 = TMRC()
-               write(6,*) 'SENSEI coprocessor(): ',tcorecp4-tcorecp3
-               total_coproc_time = total_coproc_time + 
-     &              tcorecp4-tcorecp3
+               if (numpe > 1) call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+               if(myrank.eq.0)  then
+                  tcorecp4 = TMRC()
+                  write(6,*) 'SENSEI coprocessor(): ',tcorecp4-tcorecp3
+                  total_coproc_time = total_coproc_time + 
+     &                 tcorecp4-tcorecp3
+               endif
             endif
 ! SENSEI END
 #endif
